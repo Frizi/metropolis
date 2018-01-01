@@ -1,0 +1,105 @@
+$unit: 8px;
+$unit-half: $unit * 0.5;
+$unit-x2: $unit * 2;
+$unit-x3: $unit * 3;
+$unit-x4: $unit * 4;
+
+@mixin layout($postfix, $breakpoint) {
+    $layout: "layout" + $postfix;
+    $flex: "flex" + $postfix;
+    $hide: "hide" + $postfix;
+    $show: "show" + $postfix;
+    @media (min-width: $breakpoint) {
+      [#{$flex}] {
+        flex: 1 0 0%;
+      }
+      @include flex($flex, 2);
+      @include flex($flex, 3);
+      @include flex($flex, 4);
+
+      [no-#{$flex}] {
+        flex: 0 1 auto;
+      }
+
+      [#{$layout}] {
+        display: flex;
+        align-items: stretch;
+        min-width: 0;
+        min-height: 0;
+        > * {
+          flex-shrink: 0;
+        }
+      }
+      [#{$layout}~=column] {
+        flex-direction: column;
+      }
+      [#{$layout}~=row] {
+        flex-direction: row;
+      }
+      [#{$layout}~=center] {
+        align-items: center;
+      }
+      [#{$layout}~=end] {
+        justify-content: flex-end;
+      }
+      [#{$layout}~=between] {
+        justify-content: space-between;
+      }
+      [#{$layout}~=around] {
+        justify-content: space-around;
+      }
+      [#{$layout}~=middle] {
+        justify-content: center;
+      }
+      [#{$layout}~=start] {
+        justify-content: flex-start;
+      }
+      [#{$layout}~=items-start] {
+        align-items: flex-start;
+      }
+      [#{$layout}~=items-end] {
+        align-items: flex-end;
+      }
+      @include spacing($layout, u05, $unit-half);
+      @include spacing($layout, u1, $unit);
+      @include spacing($layout, u2, $unit-x2);
+      @include spacing($layout, u3, $unit-x3);
+      @include spacing($layout, u4, $unit-x4);
+
+      // watch out for specificity
+      [#{$hide}][#{$hide}] {
+        display: none;
+      }
+
+      [#{$show}][#{$show}] {
+        display: block;
+      }
+    }
+  }
+
+  @mixin spacing($layout, $name, $size) {
+    [#{$layout}~=#{$name}] {
+      &[#{$layout}~=row] {
+        > * + * {
+          margin-top: 0;
+          margin-left: $size;
+        }
+      }
+      &[#{$layout}~=column] {
+        > * + * {
+          margin-top: $size;
+          margin-left: 0;
+        }
+      }
+    }
+  }
+
+  @mixin flex($flex, $number) {
+    [#{$flex}="#{$number}"] {
+      flex: $number 0 0%;
+    }
+  }
+
+  @include layout("", 0px);
+  @include layout("-md", 850px);
+  @include layout("-lg", 1100px);
