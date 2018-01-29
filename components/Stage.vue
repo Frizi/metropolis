@@ -6,7 +6,7 @@
         />
         <DiscreteSlider v-model="stage.count" :options="[1,2,3,4,5,6,7,8]"/>
         <DiscreteSlider v-model="stage.mode" :options="modeOptions"/>
-        <Checkbox v-model="stage.active"/>
+        <Checkbox @input="handleStageButton" :value="stageButtonValue"/>
     </div>
 </template>
 <script>
@@ -36,10 +36,26 @@ export default {
         stage: {
             type: Object,
             required: true
+        },
+        manual: {
+            type: Boolean,
+            required: false
         }
     },
     computed: {
-        modeOptions: () => modeOptions
+        modeOptions: () => modeOptions,
+        stageButtonValue () {
+            return this.manual ? this.active : this.stage.active
+        }
+    },
+    methods: {
+        handleStageButton () {
+            if (this.manual) {
+                this.$emit('trigger')
+            } else {
+                stage.active = !stage.active
+            }
+        }
     }
 }
 </script>

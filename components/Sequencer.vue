@@ -1,18 +1,37 @@
 <template>
   <div layout="row u3">
-        <Stage v-for="(s, n) in stageSettings" :key="n" :stage="s" :active="gate && n === displayStage"/>
-
+        <Stage
+            v-for="(s, n) in stageSettings"
+            :key="n" :stage="s"
+            :active="gate && n === displayStage"
+            :manual="manual"
+            @trigger="goToStage(n)"
+        />
+        <LaunchpadCtrl
+            :gate="gate"
+            :displayStage="displayStage"
+            :subStage="subStage"
+            :stageSettings="stageSettings"
+            :manual="manual"
+            @manualStage="goToStage"
+            @toggleManual="toggleManual"
+        />
+        <Checkbox v-model="manual"/>
   </div>
 </template>
 <script>
 import Stage from './Stage.vue'
-import { MODE_SINGLE, MODE_MULTIPLE, MODE_HOLD, MODE_SILENT } from '../constants.js'
+import Checkbox from './Checkbox.vue'
+import LaunchpadCtrl from './LaunchpadCtrl.vue'
+import { MODE_HOLD, MODE_MULTIPLE, MODE_SINGLE, MODE_SILENT } from '../constants.js'
 
-const scale = ['C3', 'D3', 'E#3', 'F3', 'G3', 'A#3', 'B#3']
+const scale = ['C2', 'D2', 'Eb2', 'E2', 'F2', 'G2', 'Ab2', 'Bb2', 'C3', 'D3', 'Eb3', 'E3', 'F3', 'G3', 'Ab3', 'Bb3']
 
 export default {
     components: {
-        Stage
+        Stage,
+        LaunchpadCtrl,
+        Checkbox
     },
 
     data () {
@@ -23,16 +42,17 @@ export default {
             stage: 0,
             subStage: 0,
             numStages: 8,
+            manual: false,
             gate: false,
             stageSettings: [
-                { active: true, count: 1, value: 0.0, mode: MODE_SINGLE },
-                { active: true, count: 1, value: 0.0, mode: MODE_SINGLE },
-                { active: true, count: 1, value: 0.0, mode: MODE_SINGLE },
-                { active: true, count: 1, value: 0.0, mode: MODE_SINGLE },
-                { active: true, count: 1, value: 0.0, mode: MODE_SINGLE },
-                { active: true, count: 1, value: 0.0, mode: MODE_SINGLE },
-                { active: true, count: 1, value: 0.0, mode: MODE_SINGLE },
-                { active: true, count: 1, value: 0.0, mode: MODE_SINGLE },
+                { active: true, count: 1, value: 0.0, mode: MODE_HOLD },
+                { active: true, count: 1, value: 0.0, mode: MODE_HOLD },
+                { active: true, count: 1, value: 0.0, mode: MODE_HOLD },
+                { active: true, count: 1, value: 0.0, mode: MODE_HOLD },
+                { active: true, count: 1, value: 0.0, mode: MODE_HOLD },
+                { active: true, count: 1, value: 0.0, mode: MODE_HOLD },
+                { active: true, count: 1, value: 0.0, mode: MODE_HOLD },
+                { active: true, count: 1, value: 0.0, mode: MODE_HOLD },
             ],
             // misc
             destroyed: false
@@ -43,15 +63,12 @@ export default {
         this._interval = setInterval(this.clock, this.clockTime)
     },
 
-    mounted () {
-        this.requestFrame()
-    },
-
     destroy () {
         clearInterval(this._interval)
     },
 
     computed: {
+        // sequencer
         displayStage () {
             return this.stage % 8
         },
@@ -63,7 +80,7 @@ export default {
         },
         currentNote () {
             const val = this.currentStageSettings.value
-            return scale[Math.floor(val * scale.length)]
+            return scale[Math.floor(val * (scale.length - 1))]
         }
     },
 
@@ -93,6 +110,9 @@ export default {
                     break
             }
         },
+        toggleManual (manual) {
+            this.manual = manual
+        },
         openGate (autoOff = true) {
             if (!this.gate) {
                 this.$emit('attack', this.currentNote)
@@ -112,7 +132,7 @@ export default {
         goToStage (stage) {
             this.stage = stage
             this.subStage = 0
-            if (!this.currentStageSettings.active) {
+            if (!this.manual && !this.currentStageSettings.active) {
                 return
             }
             this.handleSubstageGate()
@@ -121,12 +141,14 @@ export default {
             const count = this.currentStageSettings.count
             const nextSubstage = this.subStage + 1
             if (nextSubstage >= count) {
-                if (this.skipAll) {
-                    this.goToStage(0)
-                } else {
-                    do {
-                        this.advanceStage()
-                    } while (!this.currentStageSettings.active)
+                if (!this.manual) {
+                    if (this.skipAll) {
+                        this.goToStage(0)
+                    } else {
+                        do {
+                            this.advanceStage()
+                        } while (!this.currentStageSettings.active)
+                    }
                 }
             } else {
                 this.subStage = nextSubstage
@@ -137,24 +159,6 @@ export default {
             const nextStage = this.stage + 1
             this.goToStage(nextStage >= this.numStages ? 0 : nextStage)
         },
-
-        // drawing
-        // tick (time) {
-        //     for (let i in this.stageSettings) {
-        //         this.stageSettings[i].value = (Math.sin(time * 0.001 + i * 0.3) + 1) * 0.5
-        //     }
-        // },
-
-        // frame (time) {
-        //     if (!this.destroyed) {
-        //         this.tick(time)
-        //         this.requestFrame()
-        //     }
-        // },
-
-        // requestFrame () {
-        //     requestAnimationFrame(this.frame)
-        // },
 
         errorHandler () {
             console.log('handle error')
